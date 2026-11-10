@@ -34,7 +34,7 @@ public class RobotHardware {
 
     // Flower Ramp Servo Positions
     public static final double RAMP_RETRACTED = 1.0;
-    public static final double RAMP_OUT = 0;
+    public static final double RAMP_OUT = 0.0;
 
     private double wallPosition = WALL_FLAT;
     private double rampPosition = RAMP_RETRACTED;
@@ -85,6 +85,12 @@ public class RobotHardware {
         shooterMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         intakeMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
+        // ==========================================================
+        // SHOOTER PIDF TUNING
+        // ==========================================================
+        PIDFCoefficients shooterPIDF = new PIDFCoefficients(100.0, 0.0, 0.0, 13.0);
+        shooterMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, shooterPIDF);
+
         wallPosition = WALL_FLAT;
         wallServo.setPosition(wallPosition);
         swayServo.setPosition(0.5);
@@ -93,12 +99,9 @@ public class RobotHardware {
 
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "odo");
 
-        // --- FIX: Restored original offsets and the missing DistanceUnit parameter ---
+        // Fixed offsets with DistanceUnit
         odo.setOffsets(210, -20, org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.MM);
-
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-
-        // Keep both axes REVERSED so your Y tracks perfectly
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
         odo.resetPosAndIMU();
     }

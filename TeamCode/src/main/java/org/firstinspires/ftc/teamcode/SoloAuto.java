@@ -35,26 +35,33 @@ public class SoloAuto extends LinearOpMode {
         // =========================================================================
 
         // 1. Strafe right 2ft FAST (70% speed)
-       // driveTo(48.0, 0.0, 0.0, 0.7);
+        // driveTo(48.0, 0.0, 0.0, 0.7);
 
         // 2. Open the gate and lock the drivetrain perfectly in place for 1.5 seconds while it shoots
+        sleep(1500);
         setGateUp();
-        holdPosition(0, 0.0, 0.0, 0.4, 5);
+        setSwaying(true);
+        holdPosition(0, 0.0, 0.0, 0.4, 1.5);
+        runIntake(-1);
+        holdPosition(0, 0.0, 0.0, 0.4, 3);
         setGateFlat();
 
+        driveTo(-31.4, -34.7, 0.0, .3);
+
+        driveTo(-84.4, -45.5, 0.0, 0.3);
         // 3. Drive forward to the flowers at normal speed (40%)
-        driveTo(24.0, 0.0, 0.0, 0.4);
+        // driveTo(24.0, 0.0, 0.0, 0.4);
 
         // 4. Shove the ramp out and lock position for 1 second to catch pollen
-        setRampOut();
-        holdPosition(24.0, 0.0, 0.0, 0.4, 1.0);
-        setRampRetracted();
+        // setRampOut();
+        // holdPosition(24.0, 0.0, 0.0, 0.4, 1.0);
+        // setRampRetracted();
 
         // 5. Strafe left FAST
-        driveTo(72.0, 0.0, 0.0, 0.7);
+        //   driveTo(72.0, 0.0, 0.0, 0.7);
 
         // 6. Return to start
-        driveTo(48.0, 0.0, 0.0, 0.5);
+        //  driveTo(48.0, 0.0, 0.0, 0.5);
 
         // Clean up
         robot.setShooterVelocity(0);
