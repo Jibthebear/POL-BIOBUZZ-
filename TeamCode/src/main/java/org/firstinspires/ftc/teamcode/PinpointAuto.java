@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
@@ -9,7 +10,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 public class PinpointAuto extends LinearOpMode {
 
     private final RobotHardware robot = new RobotHardware();
-
     private boolean isAutoSwaying = false;
 
     @Override
@@ -29,26 +29,29 @@ public class PinpointAuto extends LinearOpMode {
 
         // =========================================================================
         // WRITE YOUR AUTO PATH HERE
-        // X is Forward/Backward (Positive is Forward)
-        // Y is Left/Right (Positive is Left, Negative is Right)
         // =========================================================================
 
-        // 1. Strafe right 2ft
-        driveTo(48.0, 0.0, 0.0);
+        // 1. Strafe right 2ft FAST (70% speed)
+        driveTo(48.0, 0.0, 0.0, 0.7);
 
-        // --- NEW: Example of shoving the ramp under the flowers ---
-        // setRampOut();
-        // sleep(1000); // Give pollen time to empty
-        // setRampRetracted();
+        // 2. Open the gate and lock the drivetrain perfectly in place for 1.5 seconds while it shoots
+        setGateUp();
+        holdPosition(48.0, 0.0, 0.0, 0.4, 1.5);
+        setGateFlat();
 
-        // 2. Go forward 2ft
-        driveTo(24.0, 0.0, 0.0);
+        // 3. Drive forward to the flowers at normal speed (40%)
+        driveTo(24.0, 0.0, 0.0, 0.4);
 
-        // 3. Strafe left 2ft
-        driveTo(72.0, 0.0, 0.0);
+        // 4. Shove the ramp out and lock position for 1 second to catch pollen
+        setRampOut();
+        holdPosition(24.0, 0.0, 0.0, 0.4, 1.0);
+        setRampRetracted();
 
-        // 4. Go backwards 2ft
-        driveTo(48.0, 0.0, 0.0);
+        // 5. Strafe left FAST
+        driveTo(72.0, 0.0, 0.0, 0.7);
+
+        // 6. Return to start
+        driveTo(48.0, 0.0, 0.0, 0.5);
 
         robot.setShooterVelocity(0);
         runIntake(0);
@@ -61,97 +64,91 @@ public class PinpointAuto extends LinearOpMode {
     // MECHANISM HELPER FUNCTIONS
     // =========================================================================
 
-    public void runIntake(double power) {
-        robot.setIntakePower(power);
-    }
-
-    public void setGateUp() {
-        robot.wallUp();
-    }
-
-    public void setGateFlat() {
-        robot.wallFlat();
-    }
+    public void runIntake(double power) { robot.setIntakePower(power); }
+    public void setGateUp() { robot.wallUp(); }
+    public void setGateFlat() { robot.wallFlat(); }
+    public void setRampOut() { robot.rampOut(); }
+    public void setRampRetracted() { robot.rampRetracted(); }
 
     public void setSwaying(boolean active) {
         isAutoSwaying = active;
-        if (!active) {
-            robot.setSwayPosition(0.5);
+        if (!active) robot.setSwayPosition(0.5);
+    }
+
+    // =========================================================================
+    // ODOMETRY DRIVE FUNCTIONS
+    // =========================================================================
+
+    // Drives to a point and exits the moment it gets within 1 inch
+    public void driveTo(double targetXInches, double targetYInches, double targetHeadingDeg, double maxSpeed) {
+        double distanceError = 999;
+        double headingError = 999;
+
+        while (opModeIsActive() && (distanceError > 25.4 || Math.abs(headingError) > 2.0)) {
+            distanceError = executePID(targetXInches, targetYInches, targetHeadingDeg, maxSpeed);
         }
+        robot.driveMecanum(0, 0, 0, 0); // Cut power once it arrives
     }
 
-    // --- NEW: Flower Ramp Auto Commands ---
-    public void setRampOut() {
-        robot.rampOut();
-    }
+    // Actively fights to hold a specific coordinate for a set amount of time
+    public void holdPosition(double targetXInches, double targetYInches, double targetHeadingDeg, double maxSpeed, double holdTimeSeconds) {
+        ElapsedTime holdTimer = new ElapsedTime();
+        holdTimer.reset();
 
-    public void setRampRetracted() {
-        robot.rampRetracted();
+        while (opModeIsActive() && holdTimer.seconds() < holdTimeSeconds) {
+            executePID(targetXInches, targetYInches, targetHeadingDeg, maxSpeed);
+        }
+        robot.driveMecanum(0, 0, 0, 0);
     }
 
     // =========================================================================
-    // ODOMETRY DRIVE FUNCTION
+    // CORE PID MATH (Shared by driveTo and holdPosition to prevent code duplication)
     // =========================================================================
 
-    public void driveTo(double targetXInches, double targetYInches, double targetHeadingDeg) {
-
+    private double executePID(double targetXInches, double targetYInches, double targetHeadingDeg, double maxSpeed) {
         double targetX = targetXInches * 25.4;
         double targetY = targetYInches * 25.4;
 
         double Kp_Translate = 0.0025;
         double Kp_Turn      = 0.010;
 
-        double MAX_SPEED = 0.35;
-        double MAX_TURN_SPEED = 0.3;
+        robot.odo.update();
 
-        double distanceError = 999;
-        double headingError = 999;
-
-        while (opModeIsActive() && (distanceError > 25.4 || Math.abs(headingError) > 2.0)) {
-
-            robot.odo.update();
-
-            if (isAutoSwaying) {
-                double swayPos = (Math.sin(getRuntime() * 3.0) + 1.0) / 2.0;
-                robot.setSwayPosition(swayPos);
-            }
-
-            double currentX = robot.odo.getPosX(DistanceUnit.MM);
-            double currentY = robot.odo.getPosY(DistanceUnit.MM);
-            double currentHeading = robot.odo.getHeading(AngleUnit.RADIANS);
-            double currentHeadingDeg = Math.toDegrees(currentHeading);
-
-            double fieldXError = targetX - currentX;
-            double fieldYError = targetY - currentY;
-
-            headingError = targetHeadingDeg - currentHeadingDeg;
-            while (headingError > 180) headingError -= 360;
-            while (headingError < -180) headingError += 360;
-
-            distanceError = Math.hypot(fieldXError, fieldYError);
-
-            double robotXError = fieldXError * Math.cos(currentHeading) + fieldYError * Math.sin(currentHeading);
-            double robotYError = -fieldXError * Math.sin(currentHeading) + fieldYError * Math.cos(currentHeading);
-
-            double driveForward = robotXError * Kp_Translate;
-            double driveStrafe  = -robotYError * Kp_Translate;
-            double driveTurn    = -headingError * Kp_Turn;
-
-            driveForward = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, driveForward));
-            driveStrafe  = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, driveStrafe));
-            driveTurn    = Math.max(-MAX_TURN_SPEED, Math.min(MAX_TURN_SPEED, driveTurn));
-
-            robot.driveMecanum(driveForward, driveStrafe, driveTurn, 1.0);
-
-            telemetry.addLine("=== REAL-TIME PID ODOMETRY ===");
-            telemetry.addData("Forward (X)", "Target: %.1f in | Actual: %.1f in", targetXInches, currentX / 25.4);
-            telemetry.addData("Left    (Y)", "Target: %.1f in | Actual: %.1f in", targetYInches, currentY / 25.4);
-            telemetry.addData("Angle (Turn)", "Target: %.1f°  | Actual: %.1f°", targetHeadingDeg, currentHeadingDeg);
-            telemetry.addLine("==============================");
-            telemetry.update();
-            // seeing this?
+        if (isAutoSwaying) {
+            double swayPos = (Math.sin(getRuntime() * 3.0) + 1.0) / 2.0;
+            robot.setSwayPosition(swayPos);
         }
 
-        robot.driveMecanum(0, 0, 0, 0);
+        double currentX = robot.odo.getPosX(DistanceUnit.MM);
+        double currentY = robot.odo.getPosY(DistanceUnit.MM);
+        double currentHeading = robot.odo.getHeading(AngleUnit.RADIANS);
+        double currentHeadingDeg = Math.toDegrees(currentHeading);
+
+        double fieldXError = targetX - currentX;
+        double fieldYError = targetY - currentY;
+
+        double headingError = targetHeadingDeg - currentHeadingDeg;
+        while (headingError > 180) headingError -= 360;
+        while (headingError < -180) headingError += 360;
+
+        double distanceError = Math.hypot(fieldXError, fieldYError);
+
+        double robotXError = fieldXError * Math.cos(currentHeading) + fieldYError * Math.sin(currentHeading);
+        double robotYError = -fieldXError * Math.sin(currentHeading) + fieldYError * Math.cos(currentHeading);
+
+        double driveForward = Math.max(-maxSpeed, Math.min(maxSpeed, robotXError * Kp_Translate));
+        double driveStrafe  = Math.max(-maxSpeed, Math.min(maxSpeed, -robotYError * Kp_Translate));
+        double driveTurn    = Math.max(-maxSpeed, Math.min(maxSpeed, -headingError * Kp_Turn));
+
+        robot.driveMecanum(driveForward, driveStrafe, driveTurn, 1.0);
+
+        telemetry.addLine("=== REAL-TIME PID ODOMETRY ===");
+        telemetry.addData("Forward (X)", "Target: %.1f in | Actual: %.1f in", targetXInches, currentX / 25.4);
+        telemetry.addData("Left    (Y)", "Target: %.1f in | Actual: %.1f in", targetYInches, currentY / 25.4);
+        telemetry.addData("Angle (Turn)", "Target: %.1f°  | Actual: %.1f°", targetHeadingDeg, currentHeadingDeg);
+        telemetry.addLine("==============================");
+        telemetry.update();
+
+        return distanceError; // Return this to the while loop so driveTo knows when to stop
     }
 }
