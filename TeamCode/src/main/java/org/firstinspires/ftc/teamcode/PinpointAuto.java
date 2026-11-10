@@ -149,6 +149,7 @@ public class PinpointAuto extends LinearOpMode {
             telemetry.addData("Angle (Turn)", "Target: %.1f°  | Actual: %.1f°", targetHeadingDeg, currentHeadingDeg);
             telemetry.addLine("==============================");
             telemetry.update();
+            // seeing this?
         }
 
         robot.driveMecanum(0, 0, 0, 0);
