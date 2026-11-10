@@ -6,8 +6,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
-@Autonomous(name = "Pinpoint Auto Path", group = "Autonomous")
-public class PinpointAuto extends LinearOpMode {
+@Autonomous(name = "Solo Auto", group = "Autonomous")
+public class SoloAuto extends LinearOpMode {
 
     private final RobotHardware robot = new RobotHardware();
     private boolean isAutoSwaying = false;
