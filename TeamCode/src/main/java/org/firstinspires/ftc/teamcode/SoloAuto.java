@@ -35,11 +35,11 @@ public class SoloAuto extends LinearOpMode {
         // =========================================================================
 
         // 1. Strafe right 2ft FAST (70% speed)
-        driveTo(48.0, 0.0, 0.0, 0.7);
+       // driveTo(48.0, 0.0, 0.0, 0.7);
 
         // 2. Open the gate and lock the drivetrain perfectly in place for 1.5 seconds while it shoots
         setGateUp();
-        holdPosition(48.0, 0.0, 0.0, 0.4, 1.5);
+        holdPosition(0, 0.0, 0.0, 0.4, 5);
         setGateFlat();
 
         // 3. Drive forward to the flowers at normal speed (40%)
