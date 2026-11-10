@@ -6,8 +6,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
-@Autonomous(name = "Solo Auto", group = "Autonomous")
-public class SoloAuto extends LinearOpMode {
+@Autonomous(name = "Solo shoot once and park", group = "Autonomous")
+public class SoloShootPark extends LinearOpMode {
 
     private final RobotHardware robot = new RobotHardware();
     private boolean isAutoSwaying = false;
@@ -46,7 +46,7 @@ public class SoloAuto extends LinearOpMode {
         holdPosition(0, 0.0, 0.0, 0.4, 3);
         setGateFlat();
 
-        driveTo(-31.4, -34.7, 0.0, .3);
+        driveTo(-31.4, -34.7, 0.0, 0.3);
 
         driveTo(-84.4, -45.5, 0.0, 0.3);
         // 3. Drive forward to the flowers at normal speed (40%)
@@ -100,7 +100,7 @@ public class SoloAuto extends LinearOpMode {
         }
         robot.driveMecanum(0, 0, 0, 0);
     }
-    //
+
     // Actively fights to hold a specific coordinate for a set amount of time
     public void holdPosition(double targetXInches, double targetYInches, double targetHeadingDeg, double maxSpeed, double holdTimeSeconds) {
         ElapsedTime holdTimer = new ElapsedTime();
@@ -148,9 +148,26 @@ public class SoloAuto extends LinearOpMode {
         double robotXError = fieldXError * Math.cos(currentHeading) + fieldYError * Math.sin(currentHeading);
         double robotYError = -fieldXError * Math.sin(currentHeading) + fieldYError * Math.cos(currentHeading);
 
-        double driveForward = Math.max(-maxSpeed, Math.min(maxSpeed, robotXError * Kp_Translate));
-        double driveStrafe  = Math.max(-maxSpeed, Math.min(maxSpeed, -robotYError * Kp_Translate));
-        double driveTurn    = Math.max(-maxSpeed, Math.min(maxSpeed, -headingError * Kp_Turn));
+        // 1. Calculate raw PID outputs BEFORE speed limits
+        double rawForward = robotXError * Kp_Translate;
+        double rawStrafe  = -robotYError * Kp_Translate;
+        double rawTurn    = -headingError * Kp_Turn;
+
+        // 2. Vector Normalization (The Straight Line Fix)
+        double translationSpeed = Math.hypot(rawForward, rawStrafe);
+
+        double driveForward = rawForward;
+        double driveStrafe = rawStrafe;
+
+        // If combined speed is too fast, scale BOTH down by the same percentage to maintain the angle
+        if (translationSpeed > maxSpeed) {
+            double scaleFactor = maxSpeed / translationSpeed;
+            driveForward *= scaleFactor;
+            driveStrafe  *= scaleFactor;
+        }
+
+        // Turn can still be clamped independently since it doesn't affect straight-line geometry
+        double driveTurn = Math.max(-maxSpeed, Math.min(maxSpeed, rawTurn));
 
         robot.driveMecanum(driveForward, driveStrafe, driveTurn, 1.0);
 
@@ -163,7 +180,7 @@ public class SoloAuto extends LinearOpMode {
 
         // Check if the robot is outside the 1-inch (25.4mm) or 2-degree tolerance
         double XYLeeway = 25.4;
-        double ZLeeway = 2;
+        double ZLeeway = 2.0;
         return (distanceError > XYLeeway || Math.abs(headingError) > ZLeeway);
     }
 }
