@@ -25,13 +25,10 @@ public class PinpointAuto extends LinearOpMode {
         robot.odo.resetPosAndIMU();
         sleep(100);
 
-        // Start shooter at exactly 61%
         robot.setShooterVelocity(0.61 * RobotHardware.MAX_SHOOTER_VELOCITY);
 
         // =========================================================================
         // WRITE YOUR AUTO PATH HERE
-        // X is Forward/Backward (Positive is Forward)
-        // Y is Left/Right (Positive is Left, Negative is Right)
         // =========================================================================
 
         // 1. Strafe right 2ft FAST (70% speed)
@@ -56,7 +53,6 @@ public class PinpointAuto extends LinearOpMode {
         // 6. Return to start
         driveTo(48.0, 0.0, 0.0, 0.5);
 
-        // Clean up
         robot.setShooterVelocity(0);
         runIntake(0);
 
@@ -76,20 +72,20 @@ public class PinpointAuto extends LinearOpMode {
 
     public void setSwaying(boolean active) {
         isAutoSwaying = active;
-        if (!active) {
-            robot.setSwayPosition(0.5);
-        }
+        if (!active) robot.setSwayPosition(0.5);
     }
 
     // =========================================================================
     // ODOMETRY DRIVE FUNCTIONS
     // =========================================================================
 
-    // Drives to a point and exits the moment it gets within 1 inch and 2 degrees
+    // Drives to a point and exits the moment it gets within 1 inch
     public void driveTo(double targetXInches, double targetYInches, double targetHeadingDeg, double maxSpeed) {
-        // Loop continuously as long as executePID returns TRUE (meaning it hasn't reached the target yet)
-        while (opModeIsActive() && executePID(targetXInches, targetYInches, targetHeadingDeg, maxSpeed)) {
-            // The math and hardware updates are handled entirely inside executePID
+        double distanceError = 999;
+        double headingError = 999;
+
+        while (opModeIsActive() && (distanceError > 25.4 || Math.abs(headingError) > 2.0)) {
+            distanceError = executePID(targetXInches, targetYInches, targetHeadingDeg, maxSpeed);
         }
         robot.driveMecanum(0, 0, 0, 0);
     }
@@ -102,15 +98,14 @@ public class PinpointAuto extends LinearOpMode {
         while (opModeIsActive() && holdTimer.seconds() < holdTimeSeconds) {
             executePID(targetXInches, targetYInches, targetHeadingDeg, maxSpeed);
         }
-        robot.driveMecanum(0, 0, 0, 0);
+        robot.driveMecanum(0, 0, 0, 0); // Cut power once it arrives
     }
 
     // =========================================================================
-    // CORE PID MATH
+    // CORE PID MATH (Shared by driveTo and holdPosition to prevent code duplication)
     // =========================================================================
 
-    // Returns TRUE if the robot is still outside the target zone, FALSE if it is on target
-    private boolean executePID(double targetXInches, double targetYInches, double targetHeadingDeg, double maxSpeed) {
+    private double executePID(double targetXInches, double targetYInches, double targetHeadingDeg, double maxSpeed) {
         double targetX = targetXInches * 25.4;
         double targetY = targetYInches * 25.4;
 
@@ -153,8 +148,7 @@ public class PinpointAuto extends LinearOpMode {
         telemetry.addData("Angle (Turn)", "Target: %.1f°  | Actual: %.1f°", targetHeadingDeg, currentHeadingDeg);
         telemetry.addLine("==============================");
         telemetry.update();
-
-        // Check if the robot is outside the 1-inch (25.4mm) or 2-degree tolerance
-        return (distanceError > 25.4 || Math.abs(headingError) > 2.0);
+        // big
+        return distanceError; // Return this to the while loop so driveTo knows when to stop
     }
 }
