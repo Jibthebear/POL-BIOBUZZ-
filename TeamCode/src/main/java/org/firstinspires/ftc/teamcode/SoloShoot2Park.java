@@ -72,9 +72,9 @@ public class SoloShoot2Park extends LinearOpMode {
         runIntake(-1);
         holdPosition(-118.4, 3.1, 180, 0.4, 1);
         runIntake(1);
-        holdPosition(-118.4, 3.1, 180, 0.4, .4);
+        holdPosition(-118.4, 3.1, 180, 0.4, .3);
         runIntake(-1);
-        holdPosition(-118.4, 3.1, 180, 0.4, 1.6);
+        holdPosition(-118.4, 3.1, 180, 0.4, 1.7);
         setGateFlat();
         runIntake(0);
 
