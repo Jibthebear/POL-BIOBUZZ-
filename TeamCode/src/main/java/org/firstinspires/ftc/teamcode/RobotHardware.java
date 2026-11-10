@@ -160,7 +160,7 @@ public class RobotHardware {
     public int getBackLeftPosition()   { return backLeft.getCurrentPosition(); }
     public int getBackRightPosition()  { return backRight.getCurrentPosition(); }
     public int getIntakePosition()     { return intakeMotor.getCurrentPosition(); }
-
+//
     private double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));
     }
