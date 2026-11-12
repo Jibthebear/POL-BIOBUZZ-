@@ -20,6 +20,9 @@ public class DuoShoot2Park extends LinearOpMode {
         boolean lastDpadUp = false;
         boolean lastDpadDown = false;
 
+        boolean parkLeft = true;
+        boolean lastX = false;
+
         // Loop during INIT so drivers can adjust the delay before pressing Play
         while (!isStarted() && !isStopRequested()) {
             boolean currentDpadUp = gamepad1.dpad_up || gamepad2.dpad_up;
@@ -35,9 +38,18 @@ public class DuoShoot2Park extends LinearOpMode {
             lastDpadUp = currentDpadUp;
             lastDpadDown = currentDpadDown;
 
+            boolean currentX = gamepad1.x || gamepad2.x;
+
+            if (currentX && !lastX) {
+                parkLeft = !parkLeft;
+            }
+            lastX = currentX;
+
             telemetry.addLine("Odometry Auto Ready.");
             telemetry.addLine("Use D-Pad UP / DOWN to adjust start delay.");
             telemetry.addData("Initial Delay", "%d seconds", delaySeconds);
+            telemetry.addLine("Press Square to toggle parking zone.");
+            telemetry.addData("Parking Zone", parkLeft ? "LEFT Parking Spot" : "RIGHT Parking Spot");
             telemetry.update();
         }
 
@@ -108,8 +120,8 @@ public class DuoShoot2Park extends LinearOpMode {
         setGateFlat();
         runIntake(0);
         driveTo(-10.7, -0.1, 0, .3);
-        driveTo(-9.3, 50.8, 0, .3);
-        holdPosition(-9.3, 50.8, 0.0, 0.4, 300000);
+        driveTo(parkLeft? -9.3: -39, 50.8, 0, .3);
+        holdPosition(parkLeft? -9.3: -39, 50.8, 0.0, 0.4, 300000);
     }
 
     // =========================================================================

@@ -16,10 +16,23 @@ public class SoloShoot2Park extends LinearOpMode {
     public void runOpMode() {
         robot.init(hardwareMap);
 
-        telemetry.addLine("Odometry Auto Ready.");
-        telemetry.update();
+        boolean parkLeft = true;
+        boolean lastX = false;
 
-        waitForStart();
+        // Loop during INIT so drivers can set the parking zone before pressing Play
+        while (!isStarted() && !isStopRequested()) {
+            boolean currentX = gamepad1.x || gamepad2.x;
+
+            if (currentX && !lastX) {
+                parkLeft = !parkLeft;
+            }
+            lastX = currentX;
+
+            telemetry.addLine("Odometry Auto Ready.");
+            telemetry.addLine("Press Square to toggle parking zone.");
+            telemetry.addData("Parking Zone", parkLeft ? "LEFT Parking Spot" : "RIGHT Parking Spot");
+            telemetry.update();
+        }
         if (isStopRequested()) return;
 
         robot.odo.resetPosAndIMU();
@@ -102,7 +115,7 @@ public class SoloShoot2Park extends LinearOpMode {
         driveTo(-104.3, 5.5, 180, 0.6);
         telemetry.addLine("Auto Finished!");
         telemetry.update();
-        holdPosition(-108.5, -46.6, 180, 0.4, 100);
+        holdPosition(parkLeft? -108.5: -80, -46.6, 180, 0.4, 100);
         // Done
     }
 
