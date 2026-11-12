@@ -16,10 +16,31 @@ public class DuoShoot2Park extends LinearOpMode {
     public void runOpMode() {
         robot.init(hardwareMap);
 
-        telemetry.addLine("Odometry Auto Ready.");
-        telemetry.update();
+        int delaySeconds = 10;
+        boolean lastDpadUp = false;
+        boolean lastDpadDown = false;
 
-        waitForStart();
+        // Loop during INIT so drivers can adjust the delay before pressing Play
+        while (!isStarted() && !isStopRequested()) {
+            boolean currentDpadUp = gamepad1.dpad_up || gamepad2.dpad_up;
+            boolean currentDpadDown = gamepad1.dpad_down || gamepad2.dpad_down;
+
+            if (currentDpadUp && !lastDpadUp) {
+                delaySeconds++;
+            }
+            if (currentDpadDown && !lastDpadDown) {
+                delaySeconds = Math.max(0, delaySeconds - 1); // Prevents negative delay
+            }
+
+            lastDpadUp = currentDpadUp;
+            lastDpadDown = currentDpadDown;
+
+            telemetry.addLine("Odometry Auto Ready.");
+            telemetry.addLine("Use D-Pad UP / DOWN to adjust start delay.");
+            telemetry.addData("Initial Delay", "%d seconds", delaySeconds);
+            telemetry.update();
+        }
+
         if (isStopRequested()) return;
 
         robot.odo.resetPosAndIMU();
@@ -32,12 +53,12 @@ public class DuoShoot2Park extends LinearOpMode {
         // WRITE YOUR AUTO PATH HERE
         // X is Forward/Backward (Positive is Forward)
         // Y is Left/Right (Positive is Left, Negative is Right)
-        // Quite easy to run Tele mode with Odom readouts and physically move the robot and record positions
         // =========================================================================
 
-        // Shooter Spin-up
-        int INITIAL_DELAY = 10000;
-        sleep(INITIAL_DELAY);
+        // Shooter Spin-up / Alliance Delay (converted from seconds to milliseconds)
+        telemetry.addData("Status", "Waiting %d seconds...", delaySeconds);
+        telemetry.update();
+        sleep(delaySeconds * 1000L);
 
         //Start shooting
         setGateUp();
@@ -56,7 +77,7 @@ public class DuoShoot2Park extends LinearOpMode {
         setGateFlat();
         setSwaying(false);
 
-        // Get infornt of flower
+        // Get in front of flower
         driveTo(-16.7, 0, 0, .3);
         setRampOut();
         driveTo(-16.7, 13.1, 0, .3);
@@ -89,9 +110,6 @@ public class DuoShoot2Park extends LinearOpMode {
         driveTo(-10.7, -0.1, 0, .3);
         driveTo(-9.3, 50.8, 0, .3);
         holdPosition(-9.3, 50.8, 0.0, 0.4, 300000);
-
-
-
     }
 
     // =========================================================================
@@ -115,16 +133,12 @@ public class DuoShoot2Park extends LinearOpMode {
     // ODOMETRY DRIVE FUNCTIONS
     // =========================================================================
 
-    // Drives to a point and exits the moment it gets within 1 inch and 2 degrees
     public void driveTo(double targetXInches, double targetYInches, double targetHeadingDeg, double maxSpeed) {
-        // Loop continuously as long as executePID returns TRUE (meaning it hasn't reached the target yet)
         while (opModeIsActive() && executePID(targetXInches, targetYInches, targetHeadingDeg, maxSpeed)) {
-            // The math and hardware updates are handled entirely inside executePID
         }
         robot.driveMecanum(0, 0, 0, 0);
     }
 
-    // Actively fights to hold a specific coordinate for a set amount of time
     public void holdPosition(double targetXInches, double targetYInches, double targetHeadingDeg, double maxSpeed, double holdTimeSeconds) {
         ElapsedTime holdTimer = new ElapsedTime();
         holdTimer.reset();
@@ -139,7 +153,6 @@ public class DuoShoot2Park extends LinearOpMode {
     // CORE PID MATH
     // =========================================================================
 
-    // Returns TRUE if the robot is still outside the target zone, FALSE if it is on target
     private boolean executePID(double targetXInches, double targetYInches, double targetHeadingDeg, double maxSpeed) {
         double targetX = targetXInches * 25.4;
         double targetY = targetYInches * 25.4;
@@ -171,25 +184,21 @@ public class DuoShoot2Park extends LinearOpMode {
         double robotXError = fieldXError * Math.cos(currentHeading) + fieldYError * Math.sin(currentHeading);
         double robotYError = -fieldXError * Math.sin(currentHeading) + fieldYError * Math.cos(currentHeading);
 
-        // 1. Calculate raw PID outputs BEFORE speed limits
         double rawForward = robotXError * Kp_Translate;
         double rawStrafe  = -robotYError * Kp_Translate;
         double rawTurn    = -headingError * Kp_Turn;
 
-        // 2. Vector Normalization (The Straight Line Fix)
         double translationSpeed = Math.hypot(rawForward, rawStrafe);
 
         double driveForward = rawForward;
         double driveStrafe = rawStrafe;
 
-        // If combined speed is too fast, scale BOTH down by the same percentage to maintain the angle
         if (translationSpeed > maxSpeed) {
             double scaleFactor = maxSpeed / translationSpeed;
             driveForward *= scaleFactor;
             driveStrafe  *= scaleFactor;
         }
 
-        // Turn can still be clamped independently since it doesn't affect straight-line geometry
         double driveTurn = Math.max(-maxSpeed, Math.min(maxSpeed, rawTurn));
 
         robot.driveMecanum(driveForward, driveStrafe, driveTurn, 1.0);
@@ -201,7 +210,6 @@ public class DuoShoot2Park extends LinearOpMode {
         telemetry.addLine("==============================");
         telemetry.update();
 
-        // Check if the robot is outside the 1-inch (25.4mm) or 2-degree tolerance
         double XYLeeway = 25.4;
         double ZLeeway = 2.0;
         return (distanceError > XYLeeway || Math.abs(headingError) > ZLeeway);
