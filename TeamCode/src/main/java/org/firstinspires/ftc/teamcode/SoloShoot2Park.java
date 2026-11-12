@@ -26,7 +26,7 @@ public class SoloShoot2Park extends LinearOpMode {
         sleep(100);
 
         // Start shooter at exactly 61%
-        robot.setShooterVelocity(0.61 * RobotHardware.MAX_SHOOTER_VELOCITY);
+        robot.setShooterVelocity(0.6 * RobotHardware.MAX_SHOOTER_VELOCITY);
 
         // =========================================================================
         // WRITE YOUR AUTO PATH HERE
@@ -56,6 +56,7 @@ public class SoloShoot2Park extends LinearOpMode {
         setSwaying(false);
 
         //Approach Flower
+        robot.setShooterVelocity(0.61 * RobotHardware.MAX_SHOOTER_VELOCITY);
         driveTo(-36.2, -33.9, -89.9, 0.3);
         setRampOut();
         runIntake(-1);
@@ -84,13 +85,13 @@ public class SoloShoot2Park extends LinearOpMode {
         //Start shooting and run the "glitch" procedure
         setGateUp();
         setSwaying(true);
-        holdPosition(-118.4, 3.1, 180, 0.3, 1.5);
+        holdPosition(-118.4, 3.1, 175, 0.3, 1.5);
         runIntake(-1);
-        holdPosition(-118.4, 3.1, 180, 0.4, 1);
+        holdPosition(-118.4, 3.1, 175, 0.4, 1);
         runIntake(1);
-        holdPosition(-118.4, 3.1, 180, 0.4, .3);
+        holdPosition(-118.4, 3.1, 175, 0.4, .3);
         runIntake(-1);
-        holdPosition(-118.4, 3.1, 180, 0.4, 1.7); //Hold to let balls fall into shooter
+        holdPosition(-118.4, 3.1, 175, 0.4, 1.7); //Hold to let balls fall into shooter
 
         //Stop shooting
         setGateFlat();
