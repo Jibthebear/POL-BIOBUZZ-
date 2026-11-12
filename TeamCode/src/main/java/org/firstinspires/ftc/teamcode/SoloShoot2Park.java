@@ -32,15 +32,17 @@ public class SoloShoot2Park extends LinearOpMode {
         // WRITE YOUR AUTO PATH HERE
         // X is Forward/Backward (Positive is Forward)
         // Y is Left/Right (Positive is Left, Negative is Right)
+        // Quite easy to run Tele mode with Odom readouts and physically move the robot and record positions
         // =========================================================================
 
-        // 1. Strafe right 2ft FAST (70% speed)
-        // driveTo(48.0, 0.0, 0.0, 0.7);
-
-        // 2. Open the gate and lock the drivetrain perfectly in place for 1.5 seconds while it shoots
+        // Shooter Spin-up
         sleep(1500);
+
+        //Start shooting
         setGateUp();
         setSwaying(true);
+
+        //Intake "glitch" to catch stuck balls
         holdPosition(0, 0.0, 0.0, 0.4, 1.5);
         runIntake(-1);
         holdPosition(0, 0.0, 0.0, 0.4, 1);
@@ -48,24 +50,38 @@ public class SoloShoot2Park extends LinearOpMode {
         holdPosition(0, 0.0, 0.0, 0.4, .1);
         runIntake(-1);
         holdPosition(0, 0.0, 0.0, 0.4, 1.9);
+
+        //Done shooting. First tip
         setGateFlat();
         setSwaying(false);
 
+        //Approach Flower
         driveTo(-36.2, -33.9, -89.9, 0.3);
         setRampOut();
         runIntake(-1);
         holdPosition(-36.2, -33.9, -89.9, 0.3, .5);
+
+        //Engage with flower
         driveTo(-37.2, -43.8, -89.9, 1);
         holdPosition(-37.2, -43.8, -89.9, 0.3, 1.5);
+
+        //Back off from flower
         driveTo(-38.2, -24.8, -89.9, 0.3);
+
+        //Drive forward a bit to intake remaining balls
         driveTo(-38.2, -33.4, -89.9, 0.3);
         setRampRetracted();
+
+        //Face the next target
         driveTo(-38.2, -33.4, 180, 0.3);
-        runIntake(0);
+        runIntake(0); // to not accidentally eat any other balls.
+
+        //Go to the next target. takes a path that maneuvers around the hive structure and flower. Positions robot for shooting.
         driveTo(-83.2, -33.7, 180, .6);
         driveTo(-107.6, 2, 180, 1);
         driveTo(-118.5, 3.1, 180, 1);
 
+        //Start shooting and run the "glitch" procedure
         setGateUp();
         setSwaying(true);
         holdPosition(-118.4, 3.1, 180, 0.3, 1.5);
@@ -74,24 +90,19 @@ public class SoloShoot2Park extends LinearOpMode {
         runIntake(1);
         holdPosition(-118.4, 3.1, 180, 0.4, .3);
         runIntake(-1);
-        holdPosition(-118.4, 3.1, 180, 0.4, 1.7);
+        holdPosition(-118.4, 3.1, 180, 0.4, 1.7); //Hold to let balls fall into shooter
+
+        //Stop shooting
         setGateFlat();
         runIntake(0);
-
-        driveTo(-104.3, 5.5, 180, 0.6);
-        holdPosition(-108.5, -46.6, 180, 0.4, 100);
-
-
-        // driveTo(24.0, 0.0, 0.0, 0.4);
-
-
-
-        // Clean up
         robot.setShooterVelocity(0);
-        runIntake(0);
 
+        //Go to parking zone and park. Turn off shooter.
+        driveTo(-104.3, 5.5, 180, 0.6);
         telemetry.addLine("Auto Finished!");
         telemetry.update();
+        holdPosition(-108.5, -46.6, 180, 0.4, 100);
+        // Done
     }
 
     // =========================================================================
